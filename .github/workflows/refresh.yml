@@ -2,10 +2,11 @@ name: Refresh flow data
 
 on:
   schedule:
-    # Every 15 min during US market hours (13:30–20:00 UTC ≈ 9:30–4 ET),
-    # plus one run after the close. GitHub cron is UTC and best-effort.
-    - cron: "*/15 13-20 * * 1-5"
-    - cron: "30 21 * * 1-5"
+    # Every 5 min during US market hours (13:30–20:00 UTC ≈ 9:30–4 ET), on
+    # off-peak minute offsets — GitHub cron is best-effort and throttles
+    # jobs scheduled on :00/:15/:30/:45 hardest. Plus one post-close run.
+    - cron: "3-58/5 13-20 * * 1-5"
+    - cron: "33 21 * * 1-5"
   workflow_dispatch:
 
 concurrency:
