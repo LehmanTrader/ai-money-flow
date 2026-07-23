@@ -1,0 +1,41 @@
+name: Refresh flow data
+
+on:
+  schedule:
+    # Every 15 min during US market hours (13:30–20:00 UTC ≈ 9:30–4 ET),
+    # plus one run after the close. GitHub cron is UTC and best-effort.
+    - cron: "*/15 13-20 * * 1-5"
+    - cron: "30 21 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Recompute flow.json
+        env:
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+        run: python pipeline.py data/flow.json
+      - name: Commit if changed
+        run: |
+          git config user.name "flow-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/flow.json
+          git diff --cached --quiet && echo "No change" && exit 0
+          git commit -m "refresh flow.json"
+          git pull --rebase origin main
+          git push

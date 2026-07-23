@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Money Flow</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+<style>
+  :root {
+    color-scheme: light only;
+    --page: #f7fbff;
+    --sky: #eaf4fe;
+    --card: #ffffff;
+    --well: #f1f6fb;
+    --ink: #1b2b3a;
+    --ink2: #506a80;
+    --muted: #859ab0;
+    --line: rgba(27, 43, 58, 0.08);
+    --grid: #e4edf5;
+    --good: #0ca30c;
+    --good-text: #006300;
+    --bad: #d03b3b;
+    --bad-text: #b02f2f;
+    --warn-text: #7a5200;
+    --accent: #2a78d6;
+    --accent-text: #1c5cab;
+    --flat: #c5d3df;
+    --tint-good: #e2f6e2;
+    --tint-bad: #fdeaea;
+    --tint-warn: #fff3d1;
+    --tint-accent: #e3effc;
+    --shadow: 0 6px 24px rgba(42, 120, 214, 0.08), 0 1px 3px rgba(27, 43, 58, 0.05);
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--page); }
+  body {
+    margin: 0;
+    background: linear-gradient(180deg, var(--sky) 0%, var(--page) 420px);
+    min-height: 100vh;
+    color: var(--ink);
+    font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 24px 16px 56px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+  header.top h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
+  .live {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
+    color: var(--ink2); background: var(--card); border-radius: 999px; padding: 6px 14px;
+    box-shadow: var(--shadow);
+  }
+  .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+  @media (prefers-reduced-motion: no-preference) {
+    .live .dot { animation: pulse 2.4s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
+  }
+  .live.stale .dot { background: #e2a400; animation: none; }
+
+  .takeaway {
+    font-size: 21px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance;
+    margin: 0 0 18px; line-height: 1.35;
+  }
+
+  .card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); }
+
+  .weather { display: flex; align-items: center; gap: 18px; padding: 18px 20px; }
+  .weather .wemoji { font-size: 52px; line-height: 1; }
+  .weather .wtitle { font-size: 19px; font-weight: 800; margin: 0 0 2px; }
+  .weather .wdo { font-size: 15px; color: var(--ink2); margin: 0; }
+  .lights { margin-top: 9px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .lights .dots { display: inline-flex; gap: 4px; }
+  .lights .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--good); }
+  .lights .dots i.off { background: transparent; border: 1.5px solid var(--flat); }
+  details.checklist { margin-top: 8px; font-size: 14px; }
+  details.checklist summary { cursor: pointer; color: var(--accent-text); font-weight: 700; list-style: none; }
+  details.checklist summary::-webkit-details-marker { display: none; }
+  details.checklist summary::after { content: " ▾"; font-size: 11px; }
+  details[open].checklist summary::after { content: " ▴"; }
+  .checklist ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+  .checklist li { display: flex; gap: 8px; align-items: baseline; color: var(--ink2); }
+  .checklist li .ok { color: var(--good-text); font-weight: 700; }
+  .checklist li .no { color: var(--bad-text); font-weight: 700; }
+
+  .eyebrow {
+    font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin: 30px 0 12px;
+  }
+  .axis-legend { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--muted); padding: 0 20px; margin-bottom: 6px; }
+
+  .ladder { display: grid; gap: 10px; }
+  .sector { border-radius: 20px; background: var(--card); box-shadow: var(--shadow); }
+  .sector summary {
+    list-style: none; cursor: pointer; padding: 15px 18px;
+    display: grid; grid-template-columns: 40px 1fr auto; grid-template-areas:
+      "icon name pill" "icon bar bar" "icon meta meta";
+    column-gap: 14px; row-gap: 8px; align-items: center;
+  }
+  .sector summary::-webkit-details-marker { display: none; }
+  .s-icon { grid-area: icon; width: 40px; height: 40px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center; align-self: start; color: var(--ink2); }
+  .s-icon svg { width: 22px; height: 22px; }
+  .s-name { grid-area: name; min-width: 0; }
+  .s-name .friendly { font-size: 16.5px; font-weight: 800; letter-spacing: -0.01em; }
+  .s-name .real { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pill { grid-area: pill; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; white-space: nowrap; justify-self: end; }
+  .pill.in      { background: var(--tint-good);   color: var(--good-text); }
+  .pill.rot     { background: var(--tint-good);   color: var(--good-text); }
+  .pill.rebound { background: var(--tint-accent); color: var(--accent-text); }
+  .pill.mixed   { background: var(--tint-warn);   color: var(--warn-text); }
+  .pill.out     { background: var(--tint-warn);   color: var(--warn-text); }
+  .pill.broken  { background: var(--tint-bad);    color: var(--bad-text); }
+
+  .s-bar { grid-area: bar; }
+  .barwrap { display: block; position: relative; height: 22px; background: var(--well); border-radius: 8px; overflow: hidden; }
+  .barwrap .mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--grid); }
+  .barwrap .fill { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; }
+  .barwrap .fill.pos { left: 50%; background: var(--good); border-top-left-radius: 0; border-bottom-left-radius: 0; }
+  .barwrap .fill.neg { right: 50%; background: var(--bad); border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .barlabel { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-top: 5px; color: var(--ink2); flex-wrap: wrap; }
+  .barlabel .month b { font-weight: 800; }
+  .week.up   { color: var(--good-text); font-weight: 700; }
+  .week.down { color: var(--bad-text);  font-weight: 700; }
+  .week.flat { color: var(--muted); font-weight: 700; }
+
+  .s-meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+  .updots { display: inline-flex; gap: 3px; align-items: center; }
+  .updots i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
+  .updots i.off { background: transparent; border: 1.5px solid var(--flat); }
+  .tick { color: var(--ink2); font-weight: 700; }
+
+  .s-detail { padding: 4px 18px 16px; margin: 0; border-top: 1.5px solid var(--grid); overflow-x: auto; }
+  .s-detail table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; }
+  .s-detail th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted); font-weight: 800; padding: 4px 8px 7px 0; border-bottom: 1.5px solid var(--grid); }
+  .s-detail td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--grid); }
+  .s-detail tr:last-child td { border-bottom: none; }
+  .s-detail td.r, .s-detail th.r { text-align: right; }
+  .s-detail .pos { color: var(--good-text); font-weight: 600; }
+  .s-detail .neg { color: var(--bad-text); font-weight: 600; }
+  .s-detail .setup { font-size: 12.5px; color: var(--ink2); }
+
+  .quad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .qcell { border-radius: 20px; background: var(--card); box-shadow: var(--shadow); padding: 14px 16px; min-height: 100px; }
+  .qcell h3 { margin: 0 0 1px; font-size: 15px; }
+  .qcell .qsub { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .qcell .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .qchip { font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: var(--well); color: var(--ink2); }
+  .qcell.leading  { background: linear-gradient(180deg, var(--tint-good) 0%, var(--card) 90%); }
+  .qcell.improving{ background: linear-gradient(180deg, var(--tint-accent) 0%, var(--card) 90%); }
+  .qcell.weakening{ background: linear-gradient(180deg, var(--tint-warn) 0%, var(--card) 90%); }
+  .qcell.lagging  { background: linear-gradient(180deg, var(--tint-bad) 0%, var(--card) 90%); }
+  .qempty { font-size: 13px; color: var(--muted); font-style: italic; }
+
+  .plan { padding: 18px 20px; }
+  .plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+  .plan li { display: flex; gap: 12px; align-items: baseline; font-size: 15px; }
+  .plan li .k { flex: 0 0 auto; font-size: 17px; }
+  .plan li b { font-weight: 800; }
+  .plan li .why { color: var(--muted); font-size: 13px; }
+
+  .howto { font-size: 14px; color: var(--ink2); padding: 16px 20px; }
+  .howto p { margin: 0 0 9px; }
+  .howto p:last-child { margin: 0; }
+  .howto b { font-weight: 800; color: var(--ink); }
+
+  footer { margin-top: 22px; font-size: 12.5px; color: var(--muted); }
+  footer p { margin: 0 0 6px; }
+
+  .loaderr {
+    display: none; margin: 0 0 16px; padding: 12px 16px; border-radius: 14px;
+    background: var(--tint-warn); color: var(--warn-text); font-size: 14px; font-weight: 700;
+  }
+  .loaderr.on { display: block; }
+
+  @media (max-width: 480px) {
+    header.top h1 { font-size: 21px; }
+    .takeaway { font-size: 18px; }
+    .weather { gap: 14px; padding: 15px 16px; }
+    .weather .wemoji { font-size: 42px; }
+    .quad { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>AI Money Flow 💸</h1>
+    <span class="live" id="live"><span class="dot"></span><span id="livetext">loading…</span></span>
+  </header>
+  <div class="loaderr" id="loaderr"></div>
+  <p class="takeaway" id="takeaway"></p>
+
+  <section class="card weather" id="weather"></section>
+
+  <div class="eyebrow">Where the money is going</div>
+  <div class="axis-legend"><span>◀ money flowing out</span><span>money flowing in ▶</span></div>
+  <div class="ladder" id="ladder"></div>
+
+  <div class="eyebrow">The rotation map</div>
+  <div class="quad" id="quad"></div>
+
+  <div class="eyebrow">Today’s game plan</div>
+  <section class="card plan"><ul id="plan"></ul></section>
+
+  <div class="eyebrow">How to read this</div>
+  <section class="card howto">
+    <p><b>The bars</b> compare each sector to the Nasdaq-100 over the past month. Bar to the right = beating the market (money flowing in). Bar to the left = trailing it (money flowing out). The line under each bar is this <b>week’s</b> turn — a sector deep in the red but green this week may be waking up.</p>
+    <p><b>The little dots</b> show how many of each sector’s stocks are still in an uptrend (above their 50-day average price). Mostly filled = healthy. Mostly hollow = damaged.</p>
+    <p><b>Tap any sector</b> to see its stocks. “Setup score” (0–100) rates how close a stock is to a buyable recovery — 70+ is interesting.</p>
+    <p>This page refreshes itself every 15 minutes during US market hours. Same transparent math as the full research dashboard.</p>
+  </section>
+
+  <footer>
+    <p>Research &amp; education only — not investment advice. Data: Finnhub / Yahoo Finance daily bars.</p>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const SECTOR_META = {
+  "GPU / Accelerators":                      { name: "AI Chips",              sub: "NVDA, AMD, AVGO…", icon: "chip",   tile: "#e3effc" },
+  "Memory / HBM / Storage":                  { name: "Memory & Storage",      sub: "MU, SNDK, WDC, STX", icon: "memory", tile: "#eae6fb" },
+  "Networking / Optics / Interconnect":      { name: "Networking & Optics",   sub: "ANET, COHR, LITE…", icon: "network", tile: "#d9f3f5" },
+  "Neocloud / GPU Cloud / HPC":              { name: "GPU Clouds",            sub: "NBIS, CRWV, IREN…", icon: "cloud",  tile: "#ddf0fd" },
+  "Data Center Electrical / Infrastructure": { name: "Data-Center Electrical",sub: "VRT, ETN, GEV…", icon: "plug",   tile: "#fdeedd" },
+  "Power / Grid / Nuclear":                  { name: "Power & Nuclear",       sub: "CEG, VST, OKLO…", icon: "bolt",   tile: "#fdf3cf" },
+  "Cooling / Thermal":                       { name: "Cooling",               sub: "VRT, TT, JCI…", icon: "snow",   tile: "#ddf4ef" },
+  "Construction / Data Center REITs":        { name: "Builders & REITs",      sub: "PWR, DLR, EQIX…", icon: "crane",  tile: "#f3ecdf" },
+  "AI Software / Cloud Platforms":           { name: "Big Tech & AI Software",sub: "MSFT, GOOG, META…", icon: "code",   tile: "#e5f5df" },
+  "Physical AI / Robotics / Defense":        { name: "Robots & Defense",      sub: "TSLA, AVAV, LMT…", icon: "robot",  tile: "#fbe7ec" },
+};
+const VERDICTS = {
+  "Strong Inflow":         { text: "💰 Money pouring in",   cls: "in" },
+  "Constructive Rotation": { text: "🌊 Money moving in",    cls: "rot" },
+  "Early Rebound":         { text: "🌱 Bouncing back",      cls: "rebound" },
+  "Mixed / Choppy":        { text: "😐 No clear direction", cls: "mixed" },
+  "Distribution":          { text: "🍂 Money leaking out",  cls: "out" },
+  "Broken / Avoid":        { text: "🚪 Money has left",     cls: "broken" },
+};
+const SETUPS = {
+  "Full Reclaim":        "Recovered — back above key levels",
+  "Early Reclaim Watch": "Starting to recover",
+  "20EMA Reclaim Watch": "Close to recovering",
+  "50SMA Defense":       "Holding at support",
+  "Pullback to Support": "Healthy dip",
+  "Damaged / Wait":      "Damaged — wait",
+  "Broken":              "Broken — avoid",
+};
+const WEATHER = {
+  "Risk-On":                { emoji: "☀️", title: "Green light",           doo: "Conditions favor buying the strongest setups." },
+  "Constructive / Mixed":   { emoji: "⛅", title: "Mostly friendly",       doo: "Be selective — only the strongest names." },
+  "Chop":                   { emoji: "☁️", title: "Choppy — no clear trend", doo: "Trade small, take profits fast, don’t chase." },
+  "Risk-Off Warning":       { emoji: "🌧️", title: "Getting risky",         doo: "No big new buys — best setups only." },
+  "Risk-Off / Liquidation": { emoji: "⛈️", title: "Storm — stand aside",   doo: "No new speculative buys. Protect capital." },
+};
+const COMPONENTS_PLAIN = {
+  "SPY above 20EMA":                        "S&P 500 short-term trend is up",
+  "SPY above 50SMA":                        "S&P 500 medium-term trend is up",
+  "QQQ above 20EMA":                        "Nasdaq short-term trend is up",
+  "QQQ above 50SMA":                        "Nasdaq medium-term trend is up",
+  "Semis (SOXX/SMH) 20D RS vs QQQ > 0":     "Chip stocks leading the market",
+  "IWM 20D RS vs SPY > 0":                  "Small companies joining the rally",
+  "VIX below 20":                           "Fear gauge is calm",
+  "VIX not rising sharply (5D < +15%)":     "Fear isn’t spiking",
+  "10Y yield stable/falling over 5D (< +0.15)": "Interest rates behaving",
+  "BTC above 20EMA":                        "Bitcoin trend is up (risk appetite)",
+  "AI watchlist ≥50% above 20EMA":          "Most AI stocks in short-term uptrends",
+  "AI watchlist ≥50% above 50SMA":          "Most AI stocks in medium-term uptrends",
+};
+const S = 'fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"';
+const ICONS = {
+  chip:   `<svg viewBox="0 0 24 24" ${S}><rect x="7" y="7" width="10" height="10" rx="1.5"/><rect x="10.2" y="10.2" width="3.6" height="3.6"/><path d="M9 7V4M15 7V4M9 20v-3M15 20v-3M7 9H4M7 15H4M20 9h-3M20 15h-3"/></svg>`,
+  memory: `<svg viewBox="0 0 24 24" ${S}><rect x="4" y="8" width="16" height="9" rx="1.5"/><path d="M8 8v9M12 8v9M16 8v9M6 20h12"/></svg>`,
+  network:`<svg viewBox="0 0 24 24" ${S}><circle cx="12" cy="6" r="2.2"/><circle cx="5.5" cy="17" r="2.2"/><circle cx="18.5" cy="17" r="2.2"/><path d="M10.8 7.9 6.7 15M13.2 7.9l4.1 7.1M7.7 17h8.6"/></svg>`,
+  cloud:  `<svg viewBox="0 0 24 24" ${S}><path d="M7 17.5a4 4 0 1 1 .6-7.96A5.5 5.5 0 0 1 18 11a3.5 3.5 0 0 1-.5 6.5H7z"/></svg>`,
+  plug:   `<svg viewBox="0 0 24 24" ${S}><path d="M9 3v5M15 3v5"/><path d="M6.5 8h11v3.5a5.5 5.5 0 0 1-11 0V8z"/><path d="M12 17v4"/></svg>`,
+  bolt:   `<svg viewBox="0 0 24 24" ${S}><path d="M13 2 4.5 13.5H11L9.5 22 19 10.5h-6.5L13 2z"/></svg>`,
+  snow:   `<svg viewBox="0 0 24 24" ${S}><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9M12 3l-2 2.2M12 3l2 2.2M12 21l-2-2.2M12 21l2-2.2"/></svg>`,
+  crane:  `<svg viewBox="0 0 24 24" ${S}><path d="M4 21h16M6 21V11h6v10M9 11V4l10 4M19 8v4M19 12h.01"/><path d="M6 15h6"/></svg>`,
+  code:   `<svg viewBox="0 0 24 24" ${S}><path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13 5.5l-2.5 13"/></svg>`,
+  robot:  `<svg viewBox="0 0 24 24" ${S}><rect x="5.5" y="8" width="13" height="10" rx="2.5"/><path d="M12 8V4.8M12 4.8h.01"/><circle cx="9.5" cy="12.5" r="0.6" fill="currentColor"/><circle cx="14.5" cy="12.5" r="0.6" fill="currentColor"/><path d="M9.5 15.5h5"/></svg>`,
+};
+
+const $ = (id) => document.getElementById(id);
+const fmt = (v, dp = 1) => (v == null || !isFinite(v)) ? "–" : (v >= 0 ? "+" : "") + v.toFixed(dp) + "%";
+let DATA = null;
+let lastLoaded = 0;
+
+function render(d) {
+  DATA = d;
+  const open = new Set([...document.querySelectorAll("details.sector[open]")]
+    .map(el => el.dataset.sector));
+
+  /* weather */
+  const r = d.regime;
+  const w = WEATHER[r.regime] || WEATHER["Chop"];
+  const comps = Object.entries(r.components);
+  const on = comps.filter(([, v]) => v).length;
+  $("weather").innerHTML = `
+    <div class="wemoji" aria-hidden="true">${w.emoji}</div>
+    <div style="min-width:0; flex:1">
+      <p class="wtitle">${w.title}</p>
+      <p class="wdo">${w.doo}</p>
+      <div class="lights"><span class="dots">${comps.map(([, v]) => `<i class="${v ? "" : "off"}"></i>`).join("")}</span>
+        <span class="num">${on} of ${comps.length} green lights</span></div>
+      <details class="checklist"><summary>What’s green, what’s not</summary>
+        <ul>${comps.map(([k, v]) => `<li><span class="${v ? "ok" : "no"}">${v ? "✓" : "✗"}</span><span>${COMPONENTS_PLAIN[k] || k}</span></li>`).join("")}</ul>
+      </details>
+    </div>`;
+
+  /* takeaway */
+  const sectors = [...d.sectors].sort((a, b) => b.score - a.score);
+  const inflow = sectors.filter(s => ["Strong Inflow", "Constructive Rotation"].includes(s.label));
+  const waking = sectors.filter(s => (s.rs20 ?? 0) < 0 && (s.rs5 ?? 0) > 1);
+  const nm = s => SECTOR_META[s.sector]?.name || s.sector;
+  const names = (list, max = 3) => {
+    const ns = list.map(nm);
+    if (ns.length <= max) return ns.length <= 1 ? ns.join("")
+      : ns.slice(0, -1).join(", ") + " and " + ns[ns.length - 1];
+    return ns.slice(0, max).join(", ") + ` and ${ns.length - max} more`;
+  };
+  let take;
+  if (inflow.length >= 3) take = `Money is flowing back into AI — led by ${names(inflow.slice(0, 2))} 🚀`;
+  else if (inflow.length) take = `Money is moving into ${names(inflow)} — selectively 💰`;
+  else if (waking.length >= 5) take = `Money has left AI stocks, but most sectors are perking up this week — early signs of life 🌱`;
+  else if (waking.length) take = `Money has left AI stocks, but ${names(waking)} ${waking.length > 1 ? "are" : "is"} showing signs of life 🌱`;
+  else take = `Money is out of AI stocks right now — sitting on your hands is a position 🧘`;
+  $("takeaway").textContent = take;
+
+  /* ladder */
+  const maxAbs = Math.max(5, ...sectors.map(s => Math.abs(s.rs20 ?? 0))) * 1.05;
+  $("ladder").innerHTML = sectors.map(s => {
+    const meta = SECTOR_META[s.sector] || { name: s.sector, sub: "", icon: "chip", tile: "var(--well)" };
+    const v = VERDICTS[s.label] || VERDICTS["Mixed / Choppy"];
+    const rs20 = s.rs20 ?? 0, rs5 = s.rs5 ?? 0;
+    const wpct = Math.min(50, Math.abs(rs20) / maxAbs * 50);
+    const nUp = s.members.filter(m => m.above_sma50).length;
+    const weekCls = rs5 > 0.5 ? "up" : rs5 < -0.5 ? "down" : "flat";
+    const weekGlyph = rs5 > 0.5 ? "▲" : rs5 < -0.5 ? "▼" : "▪";
+    const weekWord = rs5 > 0.5 ? "turning up this week" : rs5 < -0.5 ? "down again this week" : "flat this week";
+    const rows = [...s.members].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).map(m => `
+      <tr><td class="tick">${m.ticker}</td>
+        <td class="setup">${SETUPS[m.setup] || m.setup}</td>
+        <td class="r num ${m.ret5 > 0 ? "pos" : m.ret5 < 0 ? "neg" : ""}">${fmt(m.ret5)}</td>
+        <td class="r num ${m.rs20 > 0 ? "pos" : m.rs20 < 0 ? "neg" : ""}">${fmt(m.rs20)}</td>
+        <td class="r num">${m.score ?? "–"}</td></tr>`).join("");
+    return `
+    <details class="sector" data-sector="${s.sector}" ${open.has(s.sector) ? "open" : ""}>
+      <summary>
+        <span class="s-icon" style="background:${meta.tile}">${ICONS[meta.icon]}</span>
+        <span class="s-name"><div class="friendly">${meta.name}</div><div class="real">${meta.sub}</div></span>
+        <span class="pill ${v.cls}">${v.text}</span>
+        <span class="s-bar">
+          <span class="barwrap"><span class="mid"></span><span class="fill ${rs20 >= 0 ? "pos" : "neg"}" style="width:${wpct}%"></span></span>
+          <span class="barlabel">
+            <span class="month num"><b>${fmt(rs20)}</b> vs market, past month</span>
+            <span class="week ${weekCls} num">${weekGlyph} ${fmt(rs5)} ${weekWord}</span>
+          </span>
+        </span>
+        <span class="s-meta">
+          <span class="updots">${s.members.map(m => `<i class="${m.above_sma50 ? "" : "off"}"></i>`).join("")}</span>
+          <span class="num">${nUp} of ${s.n_tickers} in uptrend</span>
+          <span>Strongest: <span class="tick">${s.leader}</span></span>
+          ${s.best_reclaim !== "-" ? `<span>Watch: <span class="tick">${s.best_reclaim}</span></span>` : ""}
+        </span>
+      </summary>
+      <div class="s-detail"><table>
+        <thead><tr><th>Stock</th><th>Condition</th><th class="r">Week</th><th class="r">Month vs mkt</th><th class="r">Setup score</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>
+    </details>`;
+  }).join("");
+
+  /* quadrants */
+  const q = { leading: [], improving: [], weakening: [], lagging: [] };
+  for (const s of sectors) {
+    const key = (s.rs20 ?? 0) >= 0
+      ? ((s.rs5 ?? 0) >= 0 ? "leading" : "weakening")
+      : ((s.rs5 ?? 0) >= 0 ? "improving" : "lagging");
+    q[key].push(nm(s));
+  }
+  const cell = (key, emoji, title, sub) => `
+    <div class="qcell ${key}"><h3>${emoji} ${title}</h3><p class="qsub">${sub}</p>
+      <div class="chips">${q[key].length ? q[key].map(n => `<span class="qchip">${n}</span>`).join("") : `<span class="qempty">none right now</span>`}</div></div>`;
+  $("quad").innerHTML =
+    cell("leading",   "🔥", "Leading",     "strong month, strong week") +
+    cell("improving", "🌱", "Waking up",   "weak month, but green this week") +
+    cell("weakening", "🍂", "Cooling off", "strong month, but red this week") +
+    cell("lagging",   "🧊", "Left behind", "weak month, still weak");
+
+  /* game plan */
+  const items = [];
+  items.push({ k: w.emoji, html: `<b>${w.title}.</b> ${w.doo}` });
+  if (inflow.length) items.push({ k: "💰", html: `Money is flowing into <b>${names(inflow)}</b> — shop for setups there first.` });
+  else items.push({ k: "💰", html: `<b>No sector is attracting money right now.</b> When nothing is being bought, cash is a position.` });
+  if (waking.length) items.push({ k: "👀", html: `<b>${names(waking)}</b> ${waking.length > 1 ? "are" : "is"} bouncing this week after a weak month — early, not proven. Watch, don’t chase. <span class="why">A real turn needs follow-through and reclaimed trend lines.</span>` });
+  const candidates = [];
+  for (const s of sectors) for (const m of s.members)
+    if ((m.score ?? 0) >= 70) candidates.push({ t: m.ticker, sec: nm(s), sc: m.score });
+  if (candidates.length) {
+    const seen = new Set();
+    const top = candidates.sort((a, b) => b.sc - a.sc).filter(c => !seen.has(c.t) && seen.add(c.t)).slice(0, 5);
+    items.push({ k: "⭐", html: `Closest to buyable recoveries: ${top.map(c => `<b>${c.t}</b> <span class="why">(${c.sec}, ${c.sc})</span>`).join(" · ")}` });
+  } else {
+    items.push({ k: "⭐", html: `<b>No stock currently scores 70+</b> on recovery setup — nothing is close to a clean buy point.` });
+  }
+  const broken = sectors.filter(s => s.label === "Broken / Avoid" && (s.rs5 ?? 0) < 0);
+  if (broken.length) items.push({ k: "🚫", html: `Still bleeding, leave alone: <b>${broken.slice(0, 4).map(nm).join(", ")}</b>${broken.length > 4 ? "…" : ""}.` });
+  if (d.qqq && d.qqq.ret20 != null) items.push({ k: "🧮", html: `For context, the Nasdaq-100 itself is <b class="num">${fmt(d.qqq.ret20)}</b> over the past month <span class="why">— the bars above measure each sector relative to it.</span>` });
+  $("plan").innerHTML = items.map(i => `<li><span class="k">${i.k}</span><span>${i.html}</span></li>`).join("");
+}
+
+function updateLiveChip() {
+  if (!DATA) return;
+  const gen = new Date(DATA.generated_utc);
+  const mins = Math.max(0, Math.round((Date.now() - gen.getTime()) / 60000));
+  const el = $("live");
+  const ago = mins < 1 ? "just now" : mins < 60 ? `${mins} min ago`
+    : mins < 48 * 60 ? `${Math.round(mins / 60)}h ago` : `${Math.round(mins / 1440)}d ago`;
+  $("livetext").textContent = `Updated ${ago}`;
+  el.classList.toggle("stale", mins > 24 * 60);
+  $("live").title = "Prices through " + new Date(DATA.last_bar_date + "T16:00:00-04:00")
+    .toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+    + " · auto-refreshes every 15 min during US market hours";
+}
+
+async function load() {
+  try {
+    const res = await fetch("data/flow.json?_=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    render(await res.json());
+    lastLoaded = Date.now();
+    $("loaderr").classList.remove("on");
+  } catch (e) {
+    if (!DATA) {
+      $("loaderr").textContent = "Couldn’t load the latest data (" + e.message + "). Retrying…";
+      $("loaderr").classList.add("on");
+    }
+  }
+  updateLiveChip();
+}
+
+load();
+setInterval(load, 5 * 60 * 1000);
+setInterval(updateLiveChip, 30 * 1000);
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && Date.now() - lastLoaded > 60 * 1000) load();
+});
+</script>
+</body>
+</html>
