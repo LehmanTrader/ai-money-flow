@@ -5,7 +5,7 @@ on:
     # Every 5 min during US market hours (13:30–20:00 UTC ≈ 9:30–4 ET), on
     # off-peak minute offsets — GitHub cron is best-effort and throttles
     # jobs scheduled on :00/:15/:30/:45 hardest. Plus one post-close run.
-    - cron: "3-58/5 13-20 * * 1-5"
+    - cron: "3,8,13,18,23,28,33,38,43,48,53,58 13-20 * * 1-5"
     - cron: "33 21 * * 1-5"
   workflow_dispatch:
 
