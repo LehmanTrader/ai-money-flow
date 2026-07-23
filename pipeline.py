@@ -384,9 +384,11 @@ def _finnhub_candles(ticker, days=365):
             d = r.json()
             if d.get("s") != "ok" or not d.get("t"):
                 return None
+            # Finnhub stamps daily bars at 00:00 UTC of the bar's date, so
+            # the bar date is the UTC date (converting to ET shifts it back
+            # a day and mislabels every bar).
             idx = (pd.to_datetime(d["t"], unit="s", utc=True)
-                   .tz_convert("America/New_York").normalize()
-                   .tz_localize(None))
+                   .normalize().tz_localize(None))
             return pd.DataFrame({"Open": d["o"], "High": d["h"],
                                  "Low": d["l"], "Close": d["c"],
                                  "Volume": d["v"]}, index=idx)
