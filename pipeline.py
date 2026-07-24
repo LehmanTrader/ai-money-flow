@@ -52,6 +52,20 @@ SECTOR_BUCKETS = {
                                          "RTX", "NOC", "GD"],
 }
 
+# Non-AI destinations — where money goes when it rotates out of the AI trade.
+MARKET_BUCKETS = {
+    "Financials / Banks / Payments": ["JPM", "GS", "BAC", "WFC", "MS",
+                                      "V", "MA"],
+    "Healthcare / Pharma": ["LLY", "UNH", "JNJ", "ABBV", "MRK", "AMGN"],
+    "Energy / Oil & Gas": ["XOM", "CVX", "COP", "SLB", "EOG"],
+    "Consumer Staples": ["WMT", "COST", "PG", "KO", "PEP"],
+    "Consumer Discretionary / Retail": ["HD", "MCD", "NKE", "LOW", "TJX",
+                                        "SBUX"],
+    "Industrials / Old Economy": ["CAT", "DE", "HON", "UNP", "GE"],
+    "Gold / Safe Havens": ["GLD", "NEM", "AEM", "SLV", "TLT"],
+    "Homebuilders / Housing": ["DHI", "LEN", "PHM", "TOL"],
+}
+
 REGIME_RULES = {
     "Risk-On": "Can trade A/A+ reclaims.",
     "Constructive / Mixed": "Selective only, prioritize strongest relative strength.",
@@ -440,7 +454,8 @@ def _clean(v):
 
 def main():
     out_path = sys.argv[1] if len(sys.argv) > 1 else "data/flow.json"
-    sector_tickers = sorted({t for ts in SECTOR_BUCKETS.values() for t in ts})
+    sector_tickers = sorted({t for buckets in (SECTOR_BUCKETS, MARKET_BUCKETS)
+                             for ts in buckets.values() for t in ts})
     universe = tuple(sorted(set(WATCHLIST) | set(sector_tickers)
                             | set(REGIME_TICKERS)))
 
@@ -466,22 +481,24 @@ def main():
             failed.append(t)
 
     sectors = []
-    for name, ts in SECTOR_BUCKETS.items():
-        agg = aggregate_sector(name, ts, metrics)
-        if not agg:
-            continue
-        members = []
-        for t in agg.pop("members"):
-            m = metrics[t]
-            members.append({
-                "ticker": t,
-                "ret1": _clean(m["ret1"]), "ret5": _clean(m["ret5"]),
-                "rs20": _clean(m["rs20"]),
-                "score": m["score"], "setup": m["setup"],
-                "above_sma50": m["above_sma50"],
-            })
-        sectors.append({**{k: _clean(v) for k, v in agg.items()},
-                        "members": members})
+    for group, buckets in (("ai", SECTOR_BUCKETS), ("market", MARKET_BUCKETS)):
+        for name, ts in buckets.items():
+            agg = aggregate_sector(name, ts, metrics)
+            if not agg:
+                continue
+            agg["group"] = group
+            members = []
+            for t in agg.pop("members"):
+                m = metrics[t]
+                members.append({
+                    "ticker": t,
+                    "ret1": _clean(m["ret1"]), "ret5": _clean(m["ret5"]),
+                    "rs20": _clean(m["rs20"]),
+                    "score": m["score"], "setup": m["setup"],
+                    "above_sma50": m["above_sma50"],
+                })
+            sectors.append({**{k: _clean(v) for k, v in agg.items()},
+                            "members": members})
     sectors.sort(key=lambda a: a["score"], reverse=True)
 
     regime = compute_regime(hist, metrics, WATCHLIST)

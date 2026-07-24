@@ -148,6 +148,9 @@
   .qcell .qsub { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
   .qcell .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .qchip { font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: var(--well); color: var(--ink2); }
+  .qchip.mkt { background: var(--card); border: 1.5px dashed var(--flat); }
+  .quad-note { font-size: 12.5px; color: var(--muted); margin: 8px 2px 0; }
+  .quad-note .qchip { font-size: 11.5px; padding: 2px 8px; }
   .qcell.leading  { background: linear-gradient(180deg, var(--tint-good) 0%, var(--card) 90%); }
   .qcell.improving{ background: linear-gradient(180deg, var(--tint-accent) 0%, var(--card) 90%); }
   .qcell.weakening{ background: linear-gradient(180deg, var(--tint-warn) 0%, var(--card) 90%); }
@@ -195,12 +198,17 @@
 
   <section class="card weather" id="weather"></section>
 
-  <div class="eyebrow">Where the money is going</div>
+  <div class="eyebrow">The AI trade</div>
   <div class="axis-legend"><span>◀ money flowing out</span><span>money flowing in ▶</span></div>
   <div class="ladder" id="ladder"></div>
 
+  <div class="eyebrow">Outside AI — where the money is going</div>
+  <div class="axis-legend"><span>◀ money flowing out</span><span>money flowing in ▶</span></div>
+  <div class="ladder" id="ladder-mkt"></div>
+
   <div class="eyebrow">The rotation map</div>
   <div class="quad" id="quad"></div>
+  <p class="quad-note">Solid chips are AI sectors · <span class="qchip mkt">dashed chips</span> are the rest of the market</p>
 
   <div class="eyebrow">Today’s game plan</div>
   <section class="card plan"><ul id="plan"></ul></section>
@@ -208,6 +216,7 @@
   <div class="eyebrow">How to read this</div>
   <section class="card howto">
     <p><b>The bars</b> compare each sector to the Nasdaq-100 over the past month. Bar to the right = beating the market (money flowing in). Bar to the left = trailing it (money flowing out). The line under each bar is this <b>week’s</b> turn — a sector deep in the red but green this week may be waking up.</p>
+    <p><b>The two ladders</b> answer two questions: the first shows money moving <b>within the AI trade</b>; the second shows where money goes <b>when it leaves AI</b> — banks, healthcare, oil, gold, and other old-economy destinations, measured on the same scale.</p>
     <p><b>The little dots</b> show how many of each sector’s stocks are still in an uptrend (above their 50-day average price). Mostly filled = healthy. Mostly hollow = damaged.</p>
     <p><b>Tap any sector</b> to see its stocks. “Setup score” (0–100) rates how close a stock is to a buyable recovery — 70+ is interesting.</p>
     <p>This page refreshes itself every 15 minutes during US market hours. Same transparent math as the full research dashboard.</p>
@@ -231,6 +240,14 @@ const SECTOR_META = {
   "Construction / Data Center REITs":        { name: "Builders & REITs",      sub: "PWR, DLR, EQIX…", icon: "crane",  tile: "#f3ecdf" },
   "AI Software / Cloud Platforms":           { name: "Big Tech & AI Software",sub: "MSFT, GOOG, META…", icon: "code",   tile: "#e5f5df" },
   "Physical AI / Robotics / Defense":        { name: "Robots & Defense",      sub: "TSLA, AVAV, LMT…", icon: "robot",  tile: "#fbe7ec" },
+  "Financials / Banks / Payments":           { name: "Banks & Payments",      sub: "JPM, GS, V, MA…", icon: "bank",   tile: "#e3effc" },
+  "Healthcare / Pharma":                     { name: "Healthcare & Pharma",   sub: "LLY, UNH, JNJ…", icon: "pulse",  tile: "#fbe7ec" },
+  "Energy / Oil & Gas":                      { name: "Oil & Gas",             sub: "XOM, CVX, COP…", icon: "oil",    tile: "#f3ecdf" },
+  "Consumer Staples":                        { name: "Everyday Staples",      sub: "WMT, COST, PG…", icon: "cart",   tile: "#e5f5df" },
+  "Consumer Discretionary / Retail":         { name: "Shopping & Dining",     sub: "HD, MCD, NKE…", icon: "bag",    tile: "#fdeedd" },
+  "Industrials / Old Economy":               { name: "Old-Economy Industry",  sub: "CAT, DE, HON…", icon: "factory",tile: "#eae6fb" },
+  "Gold / Safe Havens":                      { name: "Gold & Safe Havens",    sub: "GLD, NEM, TLT…", icon: "gold",   tile: "#fdf3cf" },
+  "Homebuilders / Housing":                  { name: "Homebuilders",          sub: "DHI, LEN, PHM, TOL", icon: "house",  tile: "#ddf4ef" },
 };
 const VERDICTS = {
   "Strong Inflow":         { text: "💰 Money pouring in",   cls: "in" },
@@ -282,6 +299,14 @@ const ICONS = {
   crane:  `<svg viewBox="0 0 24 24" ${S}><path d="M4 21h16M6 21V11h6v10M9 11V4l10 4M19 8v4M19 12h.01"/><path d="M6 15h6"/></svg>`,
   code:   `<svg viewBox="0 0 24 24" ${S}><path d="m8.5 8-4 4 4 4M15.5 8l4 4-4 4M13 5.5l-2.5 13"/></svg>`,
   robot:  `<svg viewBox="0 0 24 24" ${S}><rect x="5.5" y="8" width="13" height="10" rx="2.5"/><path d="M12 8V4.8M12 4.8h.01"/><circle cx="9.5" cy="12.5" r="0.6" fill="currentColor"/><circle cx="14.5" cy="12.5" r="0.6" fill="currentColor"/><path d="M9.5 15.5h5"/></svg>`,
+  bank:   `<svg viewBox="0 0 24 24" ${S}><path d="M4 9.5 12 4l8 5.5M5 9.5h14M6.5 9.5V17M10.2 9.5V17M13.8 9.5V17M17.5 9.5V17M4.5 17h15M3.5 20h17"/></svg>`,
+  pulse:  `<svg viewBox="0 0 24 24" ${S}><path d="M3.5 12h4l2-4.5 3 9 2.5-6 1.5 1.5h4"/></svg>`,
+  oil:    `<svg viewBox="0 0 24 24" ${S}><path d="M12 3.5S6 10 6 14a6 6 0 0 0 12 0c0-4-6-10.5-6-10.5z"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5"/></svg>`,
+  cart:   `<svg viewBox="0 0 24 24" ${S}><path d="M3.5 4.5h2.5l2 11h10l2-8H7"/><circle cx="9.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/></svg>`,
+  bag:    `<svg viewBox="0 0 24 24" ${S}><path d="M5.5 8h13l-1 12h-11l-1-12z"/><path d="M9 10.5V6.5a3 3 0 0 1 6 0v4"/></svg>`,
+  factory:`<svg viewBox="0 0 24 24" ${S}><path d="M4 20V9l5 3.5V9l5 3.5V9l6 4v7H4z"/><path d="M6.5 5.5h2V9"/><path d="M8 20v-3h3v3M13 17h3"/></svg>`,
+  gold:   `<svg viewBox="0 0 24 24" ${S}><path d="M6.5 10.5h5l1.5 4h-8l1.5-4zM12.5 10.5h5l1.5 4h-8M9 6.5h5l1.5 4"/><path d="M4 18.5h16"/></svg>`,
+  house:  `<svg viewBox="0 0 24 24" ${S}><path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 10.5V20h11v-9.5"/><path d="M10.3 20v-5h3.4v5"/></svg>`,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -312,8 +337,11 @@ function render(d) {
     </div>`;
 
   /* takeaway */
-  const sectors = [...d.sectors].sort((a, b) => b.score - a.score);
+  const all = [...d.sectors].sort((a, b) => b.score - a.score);
+  const sectors = all.filter(s => (s.group || "ai") === "ai");
+  const market = all.filter(s => s.group === "market");
   const inflow = sectors.filter(s => ["Strong Inflow", "Constructive Rotation"].includes(s.label));
+  const mktInflow = market.filter(s => ["Strong Inflow", "Constructive Rotation"].includes(s.label));
   const waking = sectors.filter(s => (s.rs20 ?? 0) < 0 && (s.rs5 ?? 0) > 1);
   const nm = s => SECTOR_META[s.sector]?.name || s.sector;
   const names = (list, max = 3) => {
@@ -325,14 +353,15 @@ function render(d) {
   let take;
   if (inflow.length >= 3) take = `Money is flowing back into AI — led by ${names(inflow.slice(0, 2))} 🚀`;
   else if (inflow.length) take = `Money is moving into ${names(inflow)} — selectively 💰`;
+  else if (mktInflow.length) take = `Money is rotating out of AI and into ${names(mktInflow, 2)} 💸`;
   else if (waking.length >= 5) take = `Money has left AI stocks, but most sectors are perking up this week — early signs of life 🌱`;
   else if (waking.length) take = `Money has left AI stocks, but ${names(waking)} ${waking.length > 1 ? "are" : "is"} showing signs of life 🌱`;
-  else take = `Money is out of AI stocks right now — sitting on your hands is a position 🧘`;
+  else take = `Money is out of AI — and nothing else is being bought either. Cash is a position 🧘`;
   $("takeaway").textContent = take;
 
-  /* ladder */
-  const maxAbs = Math.max(5, ...sectors.map(s => Math.abs(s.rs20 ?? 0))) * 1.05;
-  $("ladder").innerHTML = sectors.map(s => {
+  /* ladders — same scale across both so bars are comparable */
+  const maxAbs = Math.max(5, ...all.map(s => Math.abs(s.rs20 ?? 0))) * 1.05;
+  const sectorCard = s => {
     const meta = SECTOR_META[s.sector] || { name: s.sector, sub: "", icon: "chip", tile: "var(--well)" };
     const v = VERDICTS[s.label] || VERDICTS["Mixed / Choppy"];
     const rs20 = s.rs20 ?? 0, rs5 = s.rs5 ?? 0;
@@ -371,19 +400,23 @@ function render(d) {
         <thead><tr><th>Stock</th><th>Condition</th><th class="r">Week</th><th class="r">Month vs mkt</th><th class="r">Setup score</th></tr></thead>
         <tbody>${rows}</tbody></table></div>
     </details>`;
-  }).join("");
+  };
+  $("ladder").innerHTML = sectors.map(sectorCard).join("");
+  $("ladder-mkt").innerHTML = market.length
+    ? market.map(sectorCard).join("")
+    : `<p class="qempty" style="margin:0">Waiting for the next data refresh to include non-AI sectors…</p>`;
 
   /* quadrants */
   const q = { leading: [], improving: [], weakening: [], lagging: [] };
-  for (const s of sectors) {
+  for (const s of all) {
     const key = (s.rs20 ?? 0) >= 0
       ? ((s.rs5 ?? 0) >= 0 ? "leading" : "weakening")
       : ((s.rs5 ?? 0) >= 0 ? "improving" : "lagging");
-    q[key].push(nm(s));
+    q[key].push({ n: nm(s), mkt: s.group === "market" });
   }
   const cell = (key, emoji, title, sub) => `
     <div class="qcell ${key}"><h3>${emoji} ${title}</h3><p class="qsub">${sub}</p>
-      <div class="chips">${q[key].length ? q[key].map(n => `<span class="qchip">${n}</span>`).join("") : `<span class="qempty">none right now</span>`}</div></div>`;
+      <div class="chips">${q[key].length ? q[key].map(c => `<span class="qchip${c.mkt ? " mkt" : ""}">${c.n}</span>`).join("") : `<span class="qempty">none right now</span>`}</div></div>`;
   $("quad").innerHTML =
     cell("leading",   "🔥", "Leading",     "strong month, strong week") +
     cell("improving", "🌱", "Waking up",   "weak month, but green this week") +
@@ -393,11 +426,13 @@ function render(d) {
   /* game plan */
   const items = [];
   items.push({ k: w.emoji, html: `<b>${w.title}.</b> ${w.doo}` });
-  if (inflow.length) items.push({ k: "💰", html: `Money is flowing into <b>${names(inflow)}</b> — shop for setups there first.` });
-  else items.push({ k: "💰", html: `<b>No sector is attracting money right now.</b> When nothing is being bought, cash is a position.` });
+  if (inflow.length) items.push({ k: "💰", html: `Within AI, money is flowing into <b>${names(inflow)}</b> — shop for setups there first.` });
+  else items.push({ k: "💰", html: `<b>No AI sector is attracting money right now.</b> When nothing is being bought, cash is a position.` });
+  if (mktInflow.length) items.push({ k: "💸", html: `Outside AI, buyers are showing up in <b>${names(mktInflow)}</b> — that’s where rotating money is landing.` });
+  else if (!inflow.length) items.push({ k: "💸", html: `<b>Nothing outside AI is attracting money either</b> — this looks like de-risking, not rotation.` });
   if (waking.length) items.push({ k: "👀", html: `<b>${names(waking)}</b> ${waking.length > 1 ? "are" : "is"} bouncing this week after a weak month — early, not proven. Watch, don’t chase. <span class="why">A real turn needs follow-through and reclaimed trend lines.</span>` });
   const candidates = [];
-  for (const s of sectors) for (const m of s.members)
+  for (const s of all) for (const m of s.members)
     if ((m.score ?? 0) >= 70) candidates.push({ t: m.ticker, sec: nm(s), sc: m.score });
   if (candidates.length) {
     const seen = new Set();
@@ -406,7 +441,7 @@ function render(d) {
   } else {
     items.push({ k: "⭐", html: `<b>No stock currently scores 70+</b> on recovery setup — nothing is close to a clean buy point.` });
   }
-  const broken = sectors.filter(s => s.label === "Broken / Avoid" && (s.rs5 ?? 0) < 0);
+  const broken = all.filter(s => s.label === "Broken / Avoid" && (s.rs5 ?? 0) < 0);
   if (broken.length) items.push({ k: "🚫", html: `Still bleeding, leave alone: <b>${broken.slice(0, 4).map(nm).join(", ")}</b>${broken.length > 4 ? "…" : ""}.` });
   if (d.qqq && d.qqq.ret20 != null) items.push({ k: "🧮", html: `For context, the Nasdaq-100 itself is <b class="num">${fmt(d.qqq.ret20)}</b> over the past month <span class="why">— the bars above measure each sector relative to it.</span>` });
   $("plan").innerHTML = items.map(i => `<li><span class="k">${i.k}</span><span>${i.html}</span></li>`).join("");
