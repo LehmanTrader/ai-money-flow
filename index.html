@@ -5,54 +5,73 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Money Flow</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💸</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,700;8..60,900&family=Noto+Sans:wght@400;500;600;700;800&family=Noto+Sans+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
     color-scheme: light only;
-    --page: #f7fbff;
-    --sky: #eaf4fe;
+    --page: #fafafa;
     --card: #ffffff;
-    --well: #f1f6fb;
-    --ink: #1b2b3a;
-    --ink2: #506a80;
-    --muted: #859ab0;
-    --line: rgba(27, 43, 58, 0.08);
-    --grid: #e4edf5;
-    --good: #0ca30c;
-    --good-text: #006300;
-    --bad: #d03b3b;
-    --bad-text: #b02f2f;
-    --warn-text: #7a5200;
-    --accent: #2a78d6;
-    --accent-text: #1c5cab;
-    --flat: #c5d3df;
-    --tint-good: #e2f6e2;
-    --tint-bad: #fdeaea;
-    --tint-warn: #fff3d1;
-    --tint-accent: #e3effc;
-    --shadow: 0 6px 24px rgba(42, 120, 214, 0.08), 0 1px 3px rgba(27, 43, 58, 0.05);
+    --well: #f4f4f4;
+    --ink: #121212;
+    --ink2: #444444;
+    --muted: #8a8a8a;
+    --line: rgba(34, 20, 61, 0.08);
+    --grid: #ececec;
+    --mint: #7dfdc8;
+    --sky: #52d6fa;
+    --lime: #e6fb51;
+    --pink: #ffa3c4;
+    --peach: #ffc48a;
+    --good: #00856a;
+    --good-text: #00694f;
+    --bad: #f78da7;
+    --bad-text: #ad2653;
+    --warn-text: #8a5b00;
+    --accent-text: #0c447c;
+    --link: #00856a;
+    --flat: #d9d9d9;
+    --tint-good: #dcfbe9;
+    --tint-bad: #ffe4ee;
+    --tint-warn: #fdf7c9;
+    --tint-accent: #dff2fb;
+    --tint-peach: #ffeeda;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    --serif: "Source Serif 4", Georgia, serif;
+    --mono: "Noto Sans Mono", ui-monospace, "SF Mono", monospace;
   }
   * { box-sizing: border-box; }
   html { background: var(--page); }
   body {
     margin: 0;
-    background: linear-gradient(180deg, var(--sky) 0%, var(--page) 420px);
+    background:
+      linear-gradient(115deg, rgba(125, 253, 200, 0.30), rgba(82, 214, 250, 0.20) 45%, rgba(230, 251, 81, 0.16) 78%, rgba(250, 250, 250, 0)) no-repeat top / 100% 340px,
+      var(--page);
     min-height: 100vh;
     color: var(--ink);
-    font-family: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-family: "Noto Sans", -apple-system, system-ui, "Segoe UI", sans-serif;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
   .wrap { max-width: 800px; margin: 0 auto; padding: 24px 16px 56px; }
   .num { font-variant-numeric: tabular-nums; }
 
-  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
-  header.top h1 { font-size: 24px; margin: 0; letter-spacing: -0.02em; }
-  .live {
-    display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
-    color: var(--ink2); background: var(--card); border-radius: 999px; padding: 6px 14px;
-    box-shadow: var(--shadow);
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 26px; }
+  header.top h1 { font-size: 17px; font-weight: 800; margin: 0; letter-spacing: -0.01em; display: flex; align-items: center; gap: 9px; }
+  header.top h1 .mark {
+    width: 20px; height: 20px; border-radius: 6px; flex: 0 0 auto;
+    background: linear-gradient(135deg, var(--mint), var(--sky) 60%, var(--lime));
+    border: 1px solid rgba(18, 18, 18, 0.12);
   }
-  .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+  .live {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink2); background: var(--card); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 13px; box-shadow: var(--shadow);
+  }
+  .live .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
   @media (prefers-reduced-motion: no-preference) {
     .live .dot { animation: pulse 2.4s ease-in-out infinite; }
     @keyframes pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.35 } }
@@ -60,63 +79,95 @@
   .live.stale .dot { background: #e2a400; animation: none; }
 
   .takeaway {
-    font-size: 21px; font-weight: 700; letter-spacing: -0.01em; text-wrap: balance;
-    margin: 0 0 18px; line-height: 1.35;
+    font-family: var(--serif);
+    font-size: clamp(28px, 5.4vw, 44px); font-weight: 900;
+    letter-spacing: -0.03em; line-height: 1.12; text-wrap: balance;
+    margin: 0 0 26px;
   }
 
-  .card { background: var(--card); border-radius: 20px; box-shadow: var(--shadow); }
+  .card {
+    background: var(--card); border-radius: 14px;
+    border: 1px solid var(--line); box-shadow: var(--shadow);
+  }
 
   .weather { display: flex; align-items: center; gap: 18px; padding: 18px 20px; }
-  .weather .wemoji { font-size: 52px; line-height: 1; }
-  .weather .wtitle { font-size: 19px; font-weight: 800; margin: 0 0 2px; }
-  .weather .wdo { font-size: 15px; color: var(--ink2); margin: 0; }
-  .lights { margin-top: 9px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+  .weather .wemoji { font-size: 48px; line-height: 1; }
+  .weather .wtitle { font-family: var(--serif); font-size: 21px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .weather .wdo { font-size: 14.5px; color: var(--ink2); margin: 0; }
+  .lights { margin-top: 9px; display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); flex-wrap: wrap; }
   .lights .dots { display: inline-flex; gap: 4px; }
-  .lights .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--good); }
+  .lights .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
   .lights .dots i.off { background: transparent; border: 1.5px solid var(--flat); }
   details.checklist { margin-top: 8px; font-size: 14px; }
-  details.checklist summary { cursor: pointer; color: var(--accent-text); font-weight: 700; list-style: none; }
+  details.checklist summary { cursor: pointer; color: var(--link); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; list-style: none; }
   details.checklist summary::-webkit-details-marker { display: none; }
-  details.checklist summary::after { content: " ▾"; font-size: 11px; }
+  details.checklist summary::after { content: " ▾"; font-size: 10px; }
   details[open].checklist summary::after { content: " ▴"; }
-  .checklist ul { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; }
-  .checklist li { display: flex; gap: 8px; align-items: baseline; color: var(--ink2); }
+  .checklist ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+  .checklist li { display: flex; gap: 8px; align-items: baseline; color: var(--ink2); font-family: "Noto Sans", sans-serif; font-size: 13.5px; }
   .checklist li .ok { color: var(--good-text); font-weight: 700; }
   .checklist li .no { color: var(--bad-text); font-weight: 700; }
 
   .eyebrow {
-    font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--muted); margin: 30px 0 12px;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--link); margin: 34px 0 12px;
   }
-  .axis-legend { display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; color: var(--muted); padding: 0 20px; margin-bottom: 6px; }
+  .eyebrow::before { content: "■ "; font-size: 8px; vertical-align: 2px; }
+  .axis-legend { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 20px; margin-bottom: 6px; }
 
   .ladder { display: grid; gap: 10px; }
-  .sector { border-radius: 20px; background: var(--card); box-shadow: var(--shadow); }
+  .sector {
+    border-radius: 14px; background: var(--card);
+    border: 1px solid var(--line); box-shadow: var(--shadow);
+    position: relative; overflow: hidden;
+  }
+  .sector::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, transparent 0%, rgba(230, 232, 236, 0.9) 18%, rgba(214, 218, 224, 0.9) 50%, rgba(230, 232, 236, 0.9) 82%, transparent 100%);
+  }
+  .sector.flow-good::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(125, 253, 200, 0.95) 18%, rgba(82, 214, 250, 0.9) 50%, rgba(230, 251, 81, 0.95) 82%, transparent 100%);
+  }
+  .sector.flow-cool::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(82, 214, 250, 0.9) 18%, rgba(125, 253, 200, 0.9) 50%, rgba(82, 214, 250, 0.9) 82%, transparent 100%);
+  }
+  .sector.flow-mixed::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(230, 251, 81, 0.95) 18%, rgba(255, 196, 138, 0.9) 50%, rgba(230, 251, 81, 0.95) 82%, transparent 100%);
+  }
+  .sector.flow-bad::before {
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 163, 196, 0.9) 18%, rgba(255, 196, 138, 0.9) 50%, rgba(255, 163, 196, 0.9) 82%, transparent 100%);
+  }
   .sector summary {
-    list-style: none; cursor: pointer; padding: 15px 18px;
+    list-style: none; cursor: pointer; padding: 16px 18px 15px;
     display: grid; grid-template-columns: 40px 1fr auto; grid-template-areas:
       "icon name pill" "icon bar bar" "icon meta meta";
     column-gap: 14px; row-gap: 8px; align-items: center;
   }
   .sector summary::-webkit-details-marker { display: none; }
-  .s-icon { grid-area: icon; width: 40px; height: 40px; border-radius: 13px;
-    display: flex; align-items: center; justify-content: center; align-self: start; color: var(--ink2); }
+  .s-icon { grid-area: icon; width: 40px; height: 40px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center; align-self: start;
+    color: var(--ink2); background: #f7f7f7; border: 1px solid var(--grid); }
   .s-icon svg { width: 22px; height: 22px; }
   .s-name { grid-area: name; min-width: 0; }
-  .s-name .friendly { font-size: 16.5px; font-weight: 800; letter-spacing: -0.01em; }
+  .s-name .friendly { font-family: var(--serif); font-size: 18.5px; font-weight: 700; letter-spacing: -0.01em; }
   .s-name .real { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pill { grid-area: pill; font-size: 13px; font-weight: 700; padding: 5px 12px; border-radius: 999px; white-space: nowrap; justify-self: end; }
+  .pill {
+    grid-area: pill; font-family: var(--mono); font-size: 10px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 4px 10px; border-radius: 6px; white-space: nowrap; justify-self: end;
+  }
   .pill.in      { background: var(--tint-good);   color: var(--good-text); }
   .pill.rot     { background: var(--tint-good);   color: var(--good-text); }
   .pill.rebound { background: var(--tint-accent); color: var(--accent-text); }
   .pill.mixed   { background: var(--tint-warn);   color: var(--warn-text); }
-  .pill.out     { background: var(--tint-warn);   color: var(--warn-text); }
+  .pill.out     { background: var(--tint-peach);  color: var(--warn-text); }
   .pill.broken  { background: var(--tint-bad);    color: var(--bad-text); }
 
   .s-bar { grid-area: bar; }
-  .barwrap { display: block; position: relative; height: 22px; background: var(--well); border-radius: 8px; overflow: hidden; }
-  .barwrap .mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: var(--grid); }
-  .barwrap .fill { position: absolute; top: 4px; bottom: 4px; border-radius: 6px; }
+  .barwrap { display: block; position: relative; height: 20px; background: var(--well); border-radius: 6px; overflow: hidden; }
+  .barwrap .mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 2px; background: #e2e2e2; }
+  .barwrap .fill { position: absolute; top: 4px; bottom: 4px; border-radius: 5px; }
   .barwrap .fill.pos { left: 50%; background: var(--good); border-top-left-radius: 0; border-bottom-left-radius: 0; }
   .barwrap .fill.neg { right: 50%; background: var(--bad); border-top-right-radius: 0; border-bottom-right-radius: 0; }
   .barlabel { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-top: 5px; color: var(--ink2); flex-wrap: wrap; }
@@ -125,16 +176,16 @@
   .week.down { color: var(--bad-text);  font-weight: 700; }
   .week.flat { color: var(--muted); font-weight: 700; }
 
-  .s-meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 13px; color: var(--muted); align-items: center; }
+  .s-meta { grid-area: meta; display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--muted); align-items: center; }
   .updots { display: inline-flex; gap: 3px; align-items: center; }
   .updots i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); }
   .updots i.off { background: transparent; border: 1.5px solid var(--flat); }
-  .tick { color: var(--ink2); font-weight: 700; }
+  .tick { color: var(--ink2); font-family: var(--mono); font-size: 11.5px; font-weight: 700; }
 
-  .s-detail { padding: 4px 18px 16px; margin: 0; border-top: 1.5px solid var(--grid); overflow-x: auto; }
+  .s-detail { padding: 4px 18px 16px; margin: 0; border-top: 1px solid var(--grid); overflow-x: auto; }
   .s-detail table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; }
-  .s-detail th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.07em;
-    color: var(--muted); font-weight: 800; padding: 4px 8px 7px 0; border-bottom: 1.5px solid var(--grid); }
+  .s-detail th { text-align: left; font-family: var(--mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); font-weight: 700; padding: 4px 8px 7px 0; border-bottom: 1px solid var(--grid); }
   .s-detail td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--grid); }
   .s-detail tr:last-child td { border-bottom: none; }
   .s-detail td.r, .s-detail th.r { text-align: right; }
@@ -143,46 +194,49 @@
   .s-detail .setup { font-size: 12.5px; color: var(--ink2); }
 
   .quad { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .qcell { border-radius: 20px; background: var(--card); box-shadow: var(--shadow); padding: 14px 16px; min-height: 100px; }
-  .qcell h3 { margin: 0 0 1px; font-size: 15px; }
-  .qcell .qsub { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  .qcell {
+    border-radius: 14px; background: var(--card); border: 1px solid var(--line);
+    box-shadow: var(--shadow); padding: 16px 16px 14px; min-height: 100px;
+    position: relative; overflow: hidden;
+  }
+  .qcell::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .qcell.leading::before   { background: linear-gradient(90deg, transparent, rgba(125, 253, 200, 0.95) 30%, rgba(82, 214, 250, 0.9) 70%, transparent); }
+  .qcell.improving::before { background: linear-gradient(90deg, transparent, rgba(82, 214, 250, 0.9) 30%, rgba(125, 253, 200, 0.9) 70%, transparent); }
+  .qcell.weakening::before { background: linear-gradient(90deg, transparent, rgba(230, 251, 81, 0.95) 30%, rgba(255, 196, 138, 0.9) 70%, transparent); }
+  .qcell.lagging::before   { background: linear-gradient(90deg, transparent, rgba(255, 163, 196, 0.9) 30%, rgba(255, 196, 138, 0.9) 70%, transparent); }
+  .qcell h3 { margin: 0 0 1px; font-family: var(--serif); font-size: 16px; font-weight: 700; }
+  .qcell .qsub { font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
   .qcell .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .qchip { font-size: 13px; font-weight: 700; padding: 5px 11px; border-radius: 999px; background: var(--well); color: var(--ink2); }
-  .qchip.mkt { background: var(--card); border: 1.5px dashed var(--flat); }
-  .quad-note { font-size: 12.5px; color: var(--muted); margin: 8px 2px 0; }
-  .quad-note .qchip { font-size: 11.5px; padding: 2px 8px; }
-  .qcell.leading  { background: linear-gradient(180deg, var(--tint-good) 0%, var(--card) 90%); }
-  .qcell.improving{ background: linear-gradient(180deg, var(--tint-accent) 0%, var(--card) 90%); }
-  .qcell.weakening{ background: linear-gradient(180deg, var(--tint-warn) 0%, var(--card) 90%); }
-  .qcell.lagging  { background: linear-gradient(180deg, var(--tint-bad) 0%, var(--card) 90%); }
+  .qchip { font-size: 11.5px; font-weight: 500; padding: 3px 9px; border-radius: 20px; background: #f2f2f2; border: 1px solid #e8e8e8; color: #555; }
+  .qchip.mkt { background: var(--card); border: 1px dashed var(--flat); }
   .qempty { font-size: 13px; color: var(--muted); font-style: italic; }
+  .quad-note { font-size: 12px; color: var(--muted); margin: 8px 2px 0; }
+  .quad-note .qchip { font-size: 10.5px; padding: 2px 8px; }
 
   .plan { padding: 18px 20px; }
   .plan ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
-  .plan li { display: flex; gap: 12px; align-items: baseline; font-size: 15px; }
-  .plan li .k { flex: 0 0 auto; font-size: 17px; }
+  .plan li { display: flex; gap: 12px; align-items: baseline; font-size: 14.5px; }
+  .plan li .k { flex: 0 0 auto; font-size: 16px; }
   .plan li b { font-weight: 800; }
-  .plan li .why { color: var(--muted); font-size: 13px; }
+  .plan li .why { color: var(--muted); font-size: 12.5px; }
 
   .howto { font-size: 14px; color: var(--ink2); padding: 16px 20px; }
   .howto p { margin: 0 0 9px; }
   .howto p:last-child { margin: 0; }
   .howto b { font-weight: 800; color: var(--ink); }
 
-  footer { margin-top: 22px; font-size: 12.5px; color: var(--muted); }
+  footer { margin-top: 26px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em; color: var(--muted); }
   footer p { margin: 0 0 6px; }
 
   .loaderr {
-    display: none; margin: 0 0 16px; padding: 12px 16px; border-radius: 14px;
-    background: var(--tint-warn); color: var(--warn-text); font-size: 14px; font-weight: 700;
+    display: none; margin: 0 0 16px; padding: 12px 16px; border-radius: 10px;
+    background: var(--tint-warn); border: 1px solid #efe4a4; color: var(--warn-text); font-size: 14px; font-weight: 700;
   }
   .loaderr.on { display: block; }
 
   @media (max-width: 480px) {
-    header.top h1 { font-size: 21px; }
-    .takeaway { font-size: 18px; }
     .weather { gap: 14px; padding: 15px 16px; }
-    .weather .wemoji { font-size: 42px; }
+    .weather .wemoji { font-size: 40px; }
     .quad { grid-template-columns: 1fr; }
   }
 </style>
@@ -190,7 +244,7 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <h1>AI Money Flow 💸</h1>
+    <h1><span class="mark" aria-hidden="true"></span>AI Money Flow</h1>
     <span class="live" id="live"><span class="dot"></span><span id="livetext">loading…</span></span>
   </header>
   <div class="loaderr" id="loaderr"></div>
@@ -230,32 +284,32 @@
 <script>
 "use strict";
 const SECTOR_META = {
-  "GPU / Accelerators":                      { name: "AI Chips",              sub: "NVDA, AMD, AVGO…", icon: "chip",   tile: "#e3effc" },
-  "Memory / HBM / Storage":                  { name: "Memory & Storage",      sub: "MU, SNDK, WDC, STX", icon: "memory", tile: "#eae6fb" },
-  "Networking / Optics / Interconnect":      { name: "Networking & Optics",   sub: "ANET, COHR, LITE…", icon: "network", tile: "#d9f3f5" },
-  "Neocloud / GPU Cloud / HPC":              { name: "GPU Clouds",            sub: "NBIS, CRWV, IREN…", icon: "cloud",  tile: "#ddf0fd" },
-  "Data Center Electrical / Infrastructure": { name: "Data-Center Electrical",sub: "VRT, ETN, GEV…", icon: "plug",   tile: "#fdeedd" },
-  "Power / Grid / Nuclear":                  { name: "Power & Nuclear",       sub: "CEG, VST, OKLO…", icon: "bolt",   tile: "#fdf3cf" },
-  "Cooling / Thermal":                       { name: "Cooling",               sub: "VRT, TT, JCI…", icon: "snow",   tile: "#ddf4ef" },
-  "Construction / Data Center REITs":        { name: "Builders & REITs",      sub: "PWR, DLR, EQIX…", icon: "crane",  tile: "#f3ecdf" },
-  "AI Software / Cloud Platforms":           { name: "Big Tech & AI Software",sub: "MSFT, GOOG, META…", icon: "code",   tile: "#e5f5df" },
-  "Physical AI / Robotics / Defense":        { name: "Robots & Defense",      sub: "TSLA, AVAV, LMT…", icon: "robot",  tile: "#fbe7ec" },
-  "Financials / Banks / Payments":           { name: "Banks & Payments",      sub: "JPM, GS, V, MA…", icon: "bank",   tile: "#e3effc" },
-  "Healthcare / Pharma":                     { name: "Healthcare & Pharma",   sub: "LLY, UNH, JNJ…", icon: "pulse",  tile: "#fbe7ec" },
-  "Energy / Oil & Gas":                      { name: "Oil & Gas",             sub: "XOM, CVX, COP…", icon: "oil",    tile: "#f3ecdf" },
-  "Consumer Staples":                        { name: "Everyday Staples",      sub: "WMT, COST, PG…", icon: "cart",   tile: "#e5f5df" },
-  "Consumer Discretionary / Retail":         { name: "Shopping & Dining",     sub: "HD, MCD, NKE…", icon: "bag",    tile: "#fdeedd" },
-  "Industrials / Old Economy":               { name: "Old-Economy Industry",  sub: "CAT, DE, HON…", icon: "factory",tile: "#eae6fb" },
-  "Gold / Safe Havens":                      { name: "Gold & Safe Havens",    sub: "GLD, NEM, TLT…", icon: "gold",   tile: "#fdf3cf" },
-  "Homebuilders / Housing":                  { name: "Homebuilders",          sub: "DHI, LEN, PHM, TOL", icon: "house",  tile: "#ddf4ef" },
+  "GPU / Accelerators":                      { name: "AI Chips",              sub: "NVDA, AMD, AVGO…", icon: "chip" },
+  "Memory / HBM / Storage":                  { name: "Memory & Storage",      sub: "MU, SNDK, WDC, STX", icon: "memory" },
+  "Networking / Optics / Interconnect":      { name: "Networking & Optics",   sub: "ANET, COHR, LITE…", icon: "network" },
+  "Neocloud / GPU Cloud / HPC":              { name: "GPU Clouds",            sub: "NBIS, CRWV, IREN…", icon: "cloud" },
+  "Data Center Electrical / Infrastructure": { name: "Data-Center Electrical",sub: "VRT, ETN, GEV…", icon: "plug" },
+  "Power / Grid / Nuclear":                  { name: "Power & Nuclear",       sub: "CEG, VST, OKLO…", icon: "bolt" },
+  "Cooling / Thermal":                       { name: "Cooling",               sub: "VRT, TT, JCI…", icon: "snow" },
+  "Construction / Data Center REITs":        { name: "Builders & REITs",      sub: "PWR, DLR, EQIX…", icon: "crane" },
+  "AI Software / Cloud Platforms":           { name: "Big Tech & AI Software",sub: "MSFT, GOOG, META…", icon: "code" },
+  "Physical AI / Robotics / Defense":        { name: "Robots & Defense",      sub: "TSLA, AVAV, LMT…", icon: "robot" },
+  "Financials / Banks / Payments":           { name: "Banks & Payments",      sub: "JPM, GS, V, MA…", icon: "bank" },
+  "Healthcare / Pharma":                     { name: "Healthcare & Pharma",   sub: "LLY, UNH, JNJ…", icon: "pulse" },
+  "Energy / Oil & Gas":                      { name: "Oil & Gas",             sub: "XOM, CVX, COP…", icon: "oil" },
+  "Consumer Staples":                        { name: "Everyday Staples",      sub: "WMT, COST, PG…", icon: "cart" },
+  "Consumer Discretionary / Retail":         { name: "Shopping & Dining",     sub: "HD, MCD, NKE…", icon: "bag" },
+  "Industrials / Old Economy":               { name: "Old-Economy Industry",  sub: "CAT, DE, HON…", icon: "factory" },
+  "Gold / Safe Havens":                      { name: "Gold & Safe Havens",    sub: "GLD, NEM, TLT…", icon: "gold" },
+  "Homebuilders / Housing":                  { name: "Homebuilders",          sub: "DHI, LEN, PHM, TOL", icon: "house" },
 };
 const VERDICTS = {
-  "Strong Inflow":         { text: "💰 Money pouring in",   cls: "in" },
-  "Constructive Rotation": { text: "🌊 Money moving in",    cls: "rot" },
-  "Early Rebound":         { text: "🌱 Bouncing back",      cls: "rebound" },
-  "Mixed / Choppy":        { text: "😐 No clear direction", cls: "mixed" },
-  "Distribution":          { text: "🍂 Money leaking out",  cls: "out" },
-  "Broken / Avoid":        { text: "🚪 Money has left",     cls: "broken" },
+  "Strong Inflow":         { text: "Money pouring in",   cls: "in" },
+  "Constructive Rotation": { text: "Money moving in",    cls: "rot" },
+  "Early Rebound":         { text: "Bouncing back",      cls: "rebound" },
+  "Mixed / Choppy":        { text: "No clear direction", cls: "mixed" },
+  "Distribution":          { text: "Money leaking out",  cls: "out" },
+  "Broken / Avoid":        { text: "Money has left",     cls: "broken" },
 };
 const SETUPS = {
   "Full Reclaim":        "Recovered — back above key levels",
@@ -362,8 +416,11 @@ function render(d) {
   /* ladders — same scale across both so bars are comparable */
   const maxAbs = Math.max(5, ...all.map(s => Math.abs(s.rs20 ?? 0))) * 1.05;
   const sectorCard = s => {
-    const meta = SECTOR_META[s.sector] || { name: s.sector, sub: "", icon: "chip", tile: "var(--well)" };
+    const meta = SECTOR_META[s.sector] || { name: s.sector, sub: "", icon: "chip" };
     const v = VERDICTS[s.label] || VERDICTS["Mixed / Choppy"];
+    const flowCls = (v.cls === "in" || v.cls === "rot") ? "flow-good"
+      : v.cls === "rebound" ? "flow-cool"
+      : (v.cls === "out" || v.cls === "broken") ? "flow-bad" : "flow-mixed";
     const rs20 = s.rs20 ?? 0, rs5 = s.rs5 ?? 0;
     const wpct = Math.min(50, Math.abs(rs20) / maxAbs * 50);
     const nUp = s.members.filter(m => m.above_sma50).length;
@@ -377,9 +434,9 @@ function render(d) {
         <td class="r num ${m.rs20 > 0 ? "pos" : m.rs20 < 0 ? "neg" : ""}">${fmt(m.rs20)}</td>
         <td class="r num">${m.score ?? "–"}</td></tr>`).join("");
     return `
-    <details class="sector" data-sector="${s.sector}" ${open.has(s.sector) ? "open" : ""}>
+    <details class="sector ${flowCls}" data-sector="${s.sector}" ${open.has(s.sector) ? "open" : ""}>
       <summary>
-        <span class="s-icon" style="background:${meta.tile}">${ICONS[meta.icon]}</span>
+        <span class="s-icon">${ICONS[meta.icon]}</span>
         <span class="s-name"><div class="friendly">${meta.name}</div><div class="real">${meta.sub}</div></span>
         <span class="pill ${v.cls}">${v.text}</span>
         <span class="s-bar">
