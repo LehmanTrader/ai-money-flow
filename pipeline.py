@@ -66,6 +66,38 @@ MARKET_BUCKETS = {
     "Homebuilders / Housing": ["DHI", "LEN", "PHM", "TOL"],
 }
 
+# Style/factor ETFs for the rotation-character panel.
+STYLE_TICKERS = ["IWM", "RSP", "IWD", "IWF", "SPHB", "SPLV", "XLY", "XLP",
+                 "SCHD", "TLT", "GLD", "HYG", "LQD"]
+
+# (key, label_a, label_b, ticker_a, ticker_b, kind) — a beating b reads
+# risk-on for "risk" pairs, risk-off for "defensive" pairs, neutral for "info".
+CHARACTER_PAIRS = [
+    ("beta",     "High-beta",       "Low-vol",        "SPHB", "SPLV", "risk"),
+    ("size",     "Small caps",      "Large caps",     "IWM",  "SPY",  "risk"),
+    ("breadth",  "Equal-weight",    "Cap-weight",     "RSP",  "SPY",  "risk"),
+    ("cyclical", "Cyclicals",       "Staples",        "XLY",  "XLP",  "risk"),
+    ("credit",   "Junk credit",     "Quality credit", "HYG",  "LQD",  "risk"),
+    ("value",    "Value",           "Growth",         "IWD",  "IWF",  "info"),
+    ("dividend", "Dividend payers", "S&P 500",        "SCHD", "SPY",  "defensive"),
+    ("duration", "Long bonds",      "S&P 500",        "TLT",  "SPY",  "defensive"),
+    ("gold",     "Gold",            "S&P 500",        "GLD",  "SPY",  "defensive"),
+]
+
+# Sector bucket -> ETF whose share creations/redemptions proxy real fund flows.
+ETF_FLOW_MAP = {
+    "GPU / Accelerators": "SMH",
+    "AI Software / Cloud Platforms": "IGV",
+    "Financials / Banks / Payments": "XLF",
+    "Healthcare / Pharma": "XLV",
+    "Energy / Oil & Gas": "XLE",
+    "Consumer Staples": "XLP",
+    "Consumer Discretionary / Retail": "XLY",
+    "Industrials / Old Economy": "XLI",
+    "Gold / Safe Havens": "GLD",
+    "Homebuilders / Housing": "XHB",
+}
+
 REGIME_RULES = {
     "Risk-On": "Can trade A/A+ reclaims.",
     "Constructive / Mixed": "Selective only, prioritize strongest relative strength.",
@@ -380,6 +412,195 @@ def compute_regime(hist, metrics, watchlist_tickers):
 
 
 # ---------------------------------------------------------------------------
+# Rotation character, fundamentals, ETF flows, breadth, history
+# ---------------------------------------------------------------------------
+
+def compute_character(hist):
+    pairs, risk_vals, def_vals = [], [], []
+    for key, la, lb, a, b, kind in CHARACTER_PAIRS:
+        ha, hb = hist.get(a), hist.get(b)
+        if ha is None or hb is None:
+            continue
+        rs20 = n_day_return(ha["Close"], 20) - n_day_return(hb["Close"], 20)
+        rs5 = n_day_return(ha["Close"], 5) - n_day_return(hb["Close"], 5)
+        if not np.isfinite(rs20):
+            continue
+        risk_on = (bool(rs20 > 0) if kind == "risk"
+                   else (bool(rs20 < 0) if kind == "defensive" else None))
+        pairs.append({"key": key, "a": a, "b": b, "label_a": la, "label_b": lb,
+                      "kind": kind, "rs20": rs20,
+                      "rs5": rs5 if np.isfinite(rs5) else None,
+                      "risk_on": risk_on})
+        scaled = float(np.clip(rs20 / 4, -1, 1))  # ±4% over a month saturates
+        if kind == "risk":
+            risk_vals.append(scaled)
+        elif kind == "defensive":
+            def_vals.append(-scaled)
+    if not risk_vals:
+        return None
+    raw = (0.65 * float(np.mean(risk_vals))
+           + 0.35 * (float(np.mean(def_vals)) if def_vals else 0.0))
+    appetite = int(round((raw + 1) / 2 * 100))
+    if appetite >= 62:
+        verdict = "Risk appetite intact"
+    elif appetite >= 45:
+        verdict = "Mixed signals"
+    else:
+        verdict = "Defensive / de-risking"
+    return {"appetite": appetite, "verdict": verdict, "pairs": pairs}
+
+
+def _finnhub_metrics(ticker):
+    for attempt in range(4):
+        try:
+            r = requests.get("https://finnhub.io/api/v1/stock/metric",
+                             params={"symbol": ticker, "metric": "all",
+                                     "token": FINNHUB_API_KEY}, timeout=10)
+            if r.status_code == 429:
+                time.sleep(2.0 * (attempt + 1))
+                continue
+            r.raise_for_status()
+            m = r.json().get("metric") or {}
+            return {"cap_m": m.get("marketCapitalization"),
+                    "beta": m.get("beta"),
+                    "yield_pct": (m.get("currentDividendYieldTTM")
+                                  or m.get("dividendYieldIndicatedAnnual")),
+                    "pe": m.get("peTTM")}
+        except Exception:
+            time.sleep(1.0)
+    return None
+
+
+def load_fundamentals(tickers, path="data/fundamentals.json", max_age_days=6):
+    """Company fundamentals move slowly — cache and refresh weekly."""
+    cached = {}
+    try:
+        with open(path) as f:
+            cached = json.load(f)
+    except Exception:
+        pass
+    try:
+        age = (datetime.now(timezone.utc)
+               - datetime.fromisoformat(cached["fetched_utc"])).days
+        missing = [t for t in tickers if t not in cached.get("metrics", {})]
+        if age < max_age_days and not missing:
+            return cached["metrics"]
+    except Exception:
+        pass
+    if not FINNHUB_API_KEY:
+        return cached.get("metrics", {})
+    from concurrent.futures import ThreadPoolExecutor
+    metrics = dict(cached.get("metrics", {}))
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        for t, m in zip(tickers, ex.map(_finnhub_metrics, tickers)):
+            if m and m.get("cap_m"):
+                metrics[t] = m
+    if metrics:
+        with open(path, "w") as f:
+            json.dump({"fetched_utc": datetime.now(timezone.utc)
+                       .isoformat(timespec="seconds"),
+                       "metrics": metrics}, f, separators=(",", ":"))
+    return metrics
+
+
+def sector_fundamentals(tickers, fundamentals):
+    fs = [fundamentals[t] for t in tickers if t in fundamentals]
+    caps = [f["cap_m"] for f in fs if f.get("cap_m")]
+    if not caps:
+        return None
+    yields_ = [f["yield_pct"] for f in fs
+               if isinstance(f.get("yield_pct"), (int, float))]
+    betas = [f["beta"] for f in fs if isinstance(f.get("beta"), (int, float))]
+    med_cap = float(np.median(caps))
+    label = ("Mega-cap" if med_cap >= 200_000 else
+             "Large-cap" if med_cap >= 10_000 else
+             "Mid-cap" if med_cap >= 2_000 else "Small-cap")
+    return {"med_cap_b": med_cap / 1000, "cap_label": label,
+            "avg_yield": float(np.mean(yields_)) if yields_ else None,
+            "avg_beta": float(np.mean(betas)) if betas else None,
+            "pct_payers": (sum(1 for y in yields_ if y and y > 0.3) / len(fs)
+                           if fs else None)}
+
+
+def fetch_etf_flows(symbols, path="data/etf_shares.json"):
+    """Share creations/redemptions — actual fund flows, not price inference.
+    Yahoo has no shares-outstanding *history* for ETFs, so we build our own:
+    snapshot each run day, then diff N run-days back once the record grows."""
+    try:
+        with open(path) as f:
+            store = json.load(f)
+    except Exception:
+        store = {}
+    today = datetime.now(timezone.utc).date().isoformat()
+    for sym in symbols:
+        try:
+            sh = yf.Ticker(sym).info.get("sharesOutstanding")
+            if sh:
+                store.setdefault(sym, {})[today] = int(sh)
+        except Exception:
+            continue
+    with open(path, "w") as f:
+        json.dump(store, f, separators=(",", ":"))
+    out = {}
+    for sym, days in store.items():
+        dates = sorted(days)
+        last = days[dates[-1]]
+
+        def chg(n):
+            if len(dates) > n and days[dates[-1 - n]] > 0:
+                return (last / days[dates[-1 - n]] - 1) * 100
+            return None
+
+        if len(dates) >= 2:
+            out[sym] = {"f5": chg(5), "f20": chg(20)}
+    return out
+
+
+def compute_breadth(metrics, tickers):
+    ms = [metrics[t] for t in tickers if t in metrics]
+    if not ms:
+        return None
+    return {
+        "n": len(ms),
+        "pct_above_50": float(np.mean([m["above_sma50"] for m in ms])),
+        "pct_above_200": float(np.mean([m["above_sma200"] for m in ms])),
+        "pct_20d_high": float(np.mean([m["making_20d_high"] for m in ms])),
+        "pct_20d_low": float(np.mean([m["making_20d_low"] for m in ms])),
+        "net_hl": int(sum(m["making_20d_high"] for m in ms)
+                      - sum(m["making_20d_low"] for m in ms)),
+    }
+
+
+def append_history(snapshot, path="data/history.jsonl"):
+    """One compact line per trading day — the training set for anything
+    predictive. Intraday refreshes overwrite the same bar date's line."""
+    line = {
+        "d": snapshot["last_bar_date"],
+        "regime": snapshot["regime"]["regime"],
+        "vix": snapshot["regime"]["vix"],
+        "appetite": (snapshot.get("character") or {}).get("appetite"),
+        "char": (snapshot.get("character") or {}).get("verdict"),
+        "qqq20": snapshot["qqq"].get("ret20"),
+        "breadth": snapshot.get("breadth"),
+        "sectors": {s["sector"]: {"s": s["score"], "r20": s["rs20"],
+                                  "r5": s["rs5"], "l": s["label"],
+                                  "g": s["group"]}
+                    for s in snapshot["sectors"]},
+    }
+    rows = []
+    try:
+        with open(path) as f:
+            rows = [json.loads(x) for x in f if x.strip()]
+    except Exception:
+        pass
+    rows = [r for r in rows if r.get("d") != line["d"]]
+    rows.append(line)
+    with open(path, "w") as f:
+        for r in rows:
+            f.write(json.dumps(r, separators=(",", ":")) + "\n")
+
+
+# ---------------------------------------------------------------------------
 # Fetching: Finnhub primary, yfinance fallback
 # ---------------------------------------------------------------------------
 
@@ -457,7 +678,7 @@ def main():
     sector_tickers = sorted({t for buckets in (SECTOR_BUCKETS, MARKET_BUCKETS)
                              for ts in buckets.values() for t in ts})
     universe = tuple(sorted(set(WATCHLIST) | set(sector_tickers)
-                            | set(REGIME_TICKERS)))
+                            | set(REGIME_TICKERS) | set(STYLE_TICKERS)))
 
     print(f"Fetching {len(universe)} tickers "
           f"({'finnhub+yf' if FINNHUB_API_KEY else 'yfinance only'})...")
@@ -480,6 +701,11 @@ def main():
         except Exception:
             failed.append(t)
 
+    fundamentals = load_fundamentals(sector_tickers)
+    etf_flows = fetch_etf_flows(sorted(set(ETF_FLOW_MAP.values())))
+    character = compute_character(hist)
+    breadth = compute_breadth(metrics, sector_tickers)
+
     sectors = []
     for group, buckets in (("ai", SECTOR_BUCKETS), ("market", MARKET_BUCKETS)):
         for name, ts in buckets.items():
@@ -487,6 +713,14 @@ def main():
             if not agg:
                 continue
             agg["group"] = group
+            fund = sector_fundamentals(ts, fundamentals)
+            if fund:
+                agg["fund"] = {k: _clean(v) for k, v in fund.items()}
+            etf_sym = ETF_FLOW_MAP.get(name)
+            if etf_sym and etf_sym in etf_flows:
+                agg["etf"] = {"sym": etf_sym,
+                              **{k: _clean(v)
+                                 for k, v in etf_flows[etf_sym].items()}}
             members = []
             for t in agg.pop("members"):
                 m = metrics[t]
@@ -515,14 +749,27 @@ def main():
             "components": {k: bool(v) for k, v in regime["components"].items()},
         },
         "qqq": {k: _clean(q.get(k)) for k in ("ret1", "ret5", "ret20")},
+        "character": character and {
+            "appetite": character["appetite"],
+            "verdict": character["verdict"],
+            "pairs": [{k: _clean(v) for k, v in p.items()}
+                      for p in character["pairs"]],
+        },
+        "breadth": breadth and {k: _clean(v) for k, v in breadth.items()},
         "sectors": sectors,
         "failed": sorted(failed),
     }
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(snapshot, f, separators=(",", ":"))
+    hist_path = os.path.join(os.path.dirname(out_path) or ".", "history.jsonl")
+    append_history(snapshot, hist_path)
     print(f"Wrote {out_path}: {len(sectors)} sectors, "
-          f"regime={regime['regime']}, last bar {snapshot['last_bar_date']}, "
+          f"regime={regime['regime']}, "
+          f"character={character['verdict'] if character else 'n/a'}, "
+          f"last bar {snapshot['last_bar_date']}, "
+          f"fundamentals for {len(fundamentals)}, "
+          f"etf flows for {len(etf_flows)}, "
           f"{len(failed)} failed: {failed}")
 
 

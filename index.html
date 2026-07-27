@@ -108,6 +108,30 @@
   .checklist li .ok { color: var(--good-text); font-weight: 700; }
   .checklist li .no { color: var(--bad-text); font-weight: 700; }
 
+  .char { padding: 16px 20px; }
+  .chead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ctitle { font-family: var(--serif); font-size: 20px; font-weight: 700; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .csub { font-size: 13.5px; color: var(--ink2); margin: 0; max-width: 52ch; }
+  .crows { display: grid; gap: 9px; }
+  .crow { display: grid; grid-template-columns: 96px 1fr 96px 118px; gap: 10px; align-items: center; }
+  .crow .cl, .crow .cr { font-size: 12px; color: var(--muted); }
+  .crow .cl { text-align: right; }
+  .crow .cwin { color: var(--ink); font-weight: 700; }
+  .cbar { height: 14px; }
+  .cbar .fill { top: 3px; bottom: 3px; }
+  .fill.c-pos { background: var(--good); }
+  .fill.c-neg { background: var(--bad); }
+  .fill.c-info { background: #c9c9c9; }
+  .crow .cnum { font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--ink2); white-space: nowrap; }
+  .cfoot { font-size: 12px; color: var(--muted); margin: 12px 0 0; }
+  @media (max-width: 560px) {
+    .crow { grid-template-columns: 84px 1fr 84px; }
+    .crow .cnum { display: none; }
+  }
+  .breadthline { margin-top: 8px; font-family: var(--mono); font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .etfflow.pos { color: var(--good-text); font-weight: 700; }
+  .etfflow.neg { color: var(--bad-text); font-weight: 700; }
+
   .eyebrow {
     font-family: var(--mono); font-size: 11px; font-weight: 700;
     letter-spacing: 0.16em; text-transform: uppercase;
@@ -252,6 +276,9 @@
 
   <section class="card weather" id="weather"></section>
 
+  <div class="eyebrow" id="chareyebrow" style="display:none">What kind of move is this?</div>
+  <section class="card char" id="charpanel" style="display:none"></section>
+
   <div class="eyebrow">The AI trade</div>
   <div class="axis-legend"><span>◀ money flowing out</span><span>money flowing in ▶</span></div>
   <div class="ladder" id="ladder"></div>
@@ -271,6 +298,7 @@
   <section class="card howto">
     <p><b>The bars</b> compare each sector to the Nasdaq-100 over the past month. Bar to the right = beating the market (money flowing in). Bar to the left = trailing it (money flowing out). The line under each bar is this <b>week’s</b> turn — a sector deep in the red but green this week may be waking up.</p>
     <p><b>The two ladders</b> answer two questions: the first shows money moving <b>within the AI trade</b>; the second shows where money goes <b>when it leaves AI</b> — banks, healthcare, oil, gold, and other old-economy destinations, measured on the same scale.</p>
+    <p><b>“What kind of move is this”</b> runs style groups head-to-head — small vs large caps, high-beta vs low-vol, junk vs quality credit, dividend payers, bonds, gold. When the risky side is winning, sector weakness is rotation you can trade; when the defensive side is winning, it’s de-risking and dips deserve caution. Each sector also shows the <b>character of its companies</b> (typical size, dividend yield, beta) and, where a clean ETF exists, <b>real fund flows</b> — the 5-day change in that ETF’s shares outstanding, which only moves when money actually enters or leaves the fund.</p>
     <p><b>The little dots</b> show how many of each sector’s stocks are still in an uptrend (above their 50-day average price). Mostly filled = healthy. Mostly hollow = damaged.</p>
     <p><b>Tap any sector</b> to see its stocks. “Setup score” (0–100) rates how close a stock is to a buyable recovery — 70+ is interesting.</p>
     <p>This page refreshes itself every 15 minutes during US market hours. Same transparent math as the full research dashboard.</p>
@@ -388,7 +416,43 @@ function render(d) {
       <details class="checklist"><summary>What’s green, what’s not</summary>
         <ul>${comps.map(([k, v]) => `<li><span class="${v ? "ok" : "no"}">${v ? "✓" : "✗"}</span><span>${COMPONENTS_PLAIN[k] || k}</span></li>`).join("")}</ul>
       </details>
+      ${d.breadth ? `<div class="breadthline num">Breadth: ${(d.breadth.pct_above_50 * 100).toFixed(0)}% of ${d.breadth.n} tracked stocks above their 50-day · net 20-day highs ${d.breadth.net_hl >= 0 ? "+" : ""}${d.breadth.net_hl}</div>` : ""}
     </div>`;
+
+  /* character panel */
+  const c = d.character;
+  const CHAR_VERDICTS = {
+    "Risk appetite intact": { title: "Risk appetite intact", cls: "in",
+      note: "Risky corners of the market are still being bought — weakness in one sector reads as rotation, not flight. Buying strong reclaims is defensible." },
+    "Mixed signals":        { title: "Mixed signals", cls: "mixed",
+      note: "Risk gauges are split — treat moves as selective rotation and size down." },
+    "Defensive / de-risking": { title: "Defensive money", cls: "broken",
+      note: "Money is favoring low-vol, dividend payers and safety assets. That’s de-risking, not rotation — treat dips with caution until this flips." },
+  };
+  const cv = c ? (CHAR_VERDICTS[c.verdict] || CHAR_VERDICTS["Mixed signals"]) : null;
+  $("chareyebrow").style.display = c ? "" : "none";
+  $("charpanel").style.display = c ? "" : "none";
+  if (c) {
+    const cmax = Math.max(4, ...c.pairs.map(p => Math.abs(p.rs20 ?? 0))) * 1.05;
+    $("charpanel").innerHTML = `
+      <div class="chead">
+        <div><p class="ctitle">${cv.title}</p><p class="csub">${cv.note}</p></div>
+        <span class="pill ${cv.cls}">Appetite ${c.appetite}/100</span>
+      </div>
+      <div class="crows">${c.pairs.map(p => {
+        const rs = p.rs20 ?? 0;
+        const w = Math.min(50, Math.abs(rs) / cmax * 50);
+        const cls = p.risk_on == null ? "info" : p.risk_on ? "pos" : "neg";
+        const winner = rs >= 0 ? p.label_a : p.label_b;
+        return `<div class="crow">
+          <span class="cl ${rs >= 0 ? "cwin" : ""}">${p.label_a}</span>
+          <span class="barwrap cbar"><span class="mid"></span><span class="fill c-${cls}" style="${rs >= 0 ? "right:50%" : "left:50%"};width:${w}%"></span></span>
+          <span class="cr ${rs < 0 ? "cwin" : ""}">${p.label_b}</span>
+          <span class="cnum">${winner} +${Math.abs(rs).toFixed(1)}% / 20D</span>
+        </div>`;
+      }).join("")}</div>
+      <p class="cfoot">Head-to-head 20-day performance of style groups. Green fills = the risk-appetite side winning · pink = the defensive side winning · gray = character info only.</p>`;
+  }
 
   /* takeaway */
   const all = [...d.sectors].sort((a, b) => b.score - a.score);
@@ -451,6 +515,8 @@ function render(d) {
           <span class="num">${nUp} of ${s.n_tickers} in uptrend</span>
           <span>Strongest: <span class="tick">${s.leader}</span></span>
           ${s.best_reclaim !== "-" ? `<span>Watch: <span class="tick">${s.best_reclaim}</span></span>` : ""}
+          ${s.fund ? `<span>${s.fund.cap_label}${s.fund.avg_yield != null ? ` · ${s.fund.avg_yield.toFixed(1)}% yld` : ""}${s.fund.avg_beta != null ? ` · β ${s.fund.avg_beta.toFixed(1)}` : ""}</span>` : ""}
+          ${s.etf && s.etf.f5 != null ? `<span class="etfflow num ${s.etf.f5 > 0.1 ? "pos" : s.etf.f5 < -0.1 ? "neg" : ""}">${s.etf.sym} shares 5d: ${fmt(s.etf.f5)}</span>` : ""}
         </span>
       </summary>
       <div class="s-detail"><table>
@@ -487,6 +553,19 @@ function render(d) {
   else items.push({ k: "💰", html: `<b>No AI sector is attracting money right now.</b> When nothing is being bought, cash is a position.` });
   if (mktInflow.length) items.push({ k: "💸", html: `Outside AI, buyers are showing up in <b>${names(mktInflow)}</b> — that’s where rotating money is landing.` });
   else if (!inflow.length) items.push({ k: "💸", html: `<b>Nothing outside AI is attracting money either</b> — this looks like de-risking, not rotation.` });
+  if (c) {
+    let charDetail = "";
+    const fInf = (mktInflow.length ? mktInflow : inflow).map(s => s.fund).filter(Boolean);
+    if (fInf.length) {
+      const counts = {};
+      fInf.forEach(f => counts[f.cap_label] = (counts[f.cap_label] || 0) + 1);
+      const topCap = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+      const ys = fInf.map(f => f.avg_yield).filter(v => v != null);
+      const bs = fInf.map(f => f.avg_beta).filter(v => v != null);
+      charDetail = ` The money is landing in <b>${topCap.toLowerCase()}</b> names${ys.length ? `, averaging <b class="num">${(ys.reduce((a, v) => a + v, 0) / ys.length).toFixed(1)}%</b> dividend yield` : ""}${bs.length ? ` and β <b class="num">${(bs.reduce((a, v) => a + v, 0) / bs.length).toFixed(1)}</b>` : ""}.`;
+    }
+    items.push({ k: "🧭", html: `<b>Character check — ${cv.title.toLowerCase()} (${c.appetite}/100).</b> ${cv.note}${charDetail}` });
+  }
   if (waking.length) items.push({ k: "👀", html: `<b>${names(waking)}</b> ${waking.length > 1 ? "are" : "is"} bouncing this week after a weak month — early, not proven. Watch, don’t chase. <span class="why">A real turn needs follow-through and reclaimed trend lines.</span>` });
   const candidates = [];
   for (const s of all) for (const m of s.members)
